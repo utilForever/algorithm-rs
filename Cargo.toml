@@ -1,0 +1,13 @@
+[package]
+name = "algorithm-rs"
+version = "0.0.1"
+authors = [ "Chris Ohk <utilforever@gmail.com>" ]
+edition = "2018"
+description = "Common data structures and algorithms for competitive programming in Rust"
+
+readme = "README.md"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
