@@ -48,6 +48,10 @@ where
         let mid = (left + right) >> 1;
         self.apply_vec(node << 1, left, mid, vec);
         self.apply_vec((node << 1) + 1, mid, right, vec);
+
+        let a = self.container[node << 1];
+        let b = self.container[(node << 1) + 1];
+        self.container[node] = (self.func)(a, b);
     }
 
     /// Makes new `SegTree` based on `vec`
@@ -96,7 +100,7 @@ where
     /// use algorithm_rs::tree::SegTree;
     ///
     /// let tree = SegTree::from_vec(&vec![1, 2, 3, 4], |a, b| a + b);
-    /// assert_eq!(tree.get(2, 5), 9); // same as `2 + 3 + 4`
+    /// assert_eq!(tree.get(1, 4), 9); // same as `2 + 3 + 4`
     /// ```
     #[inline]
     pub fn get(&self, start: usize, end: usize) -> T {
