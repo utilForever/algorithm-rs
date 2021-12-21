@@ -1,6 +1,21 @@
-/// To use SegTree, following condition has to be met.
+/// This is a segment tree that can be used widely.
+/// Index is 0-based, range calculation is based on `std::ops::Range`.
 ///
-/// - `func(func(a, b), c) == func(a, func(b, c))`
+/// # Conditions
+///
+/// - `func(func(a, b), c) == func(a, func(b, c))` (associated law)
+///
+/// If the conditions are not met, the behavior is undefined
+///
+/// # Examples
+///
+/// ```
+/// use algorithm_rs::tree::SegTree;
+///
+/// let mut tree = SegTree::new(10, 0, |a, b| a + b);
+/// tree.set(2, 3);
+/// assert_eq!(tree.get(1, 3), 3);
+/// ```
 pub struct SegTree<T, F>
 where
     T: Copy,
@@ -15,7 +30,9 @@ where
     T: Copy,
     F: Fn(T, T) -> T,
 {
+    /// Makes new `SegTree`
     pub fn new(size: usize, default: T, func: F) -> SegTree<T, F> {
+        debug_assert!(size > 0, "SegTree cannot be empty");
         SegTree {
             container: vec![default; size << 2],
             func,
@@ -33,6 +50,8 @@ where
         self.apply_vec((node << 1) + 1, mid, right, vec);
     }
 
+    /// Makes new `SegTree` based on `vec`
+    /// The indices would match with items.
     pub fn from_vec(vec: &Vec<T>, func: F) -> SegTree<T, F> {
         debug_assert!(vec.len() > 0, "SegTree cannot be empty");
         let mut tree = Self::new(vec.len(), vec[0], func);
@@ -40,6 +59,7 @@ where
         tree
     }
 
+    /// Returns length of the `SegTree`
     #[inline]
     pub fn len(&self) -> usize {
         self.container.len() >> 2
@@ -63,6 +83,21 @@ where
         }
     }
 
+    /// Calculates the functions in range.
+    /// Acts like fold function within range.
+    ///
+    /// Indices are 0-based, `end` index is not included in calculation
+    ///
+    /// **Time Complexity**: `O(log n)` where `n = self.len()`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use algorithm_rs::tree::SegTree;
+    ///
+    /// let tree = SegTree::from_vec(&vec![1, 2, 3, 4], |a, b| a + b);
+    /// assert_eq!(tree.get(2, 5), 9); // same as `2 + 3 + 4`
+    /// ```
     #[inline]
     pub fn get(&self, start: usize, end: usize) -> T {
         debug_assert!(start < end, "start = {} > end = {}", start, end);
@@ -90,6 +125,11 @@ where
         self.container[node] = (self.func)(a, b);
     }
 
+    /// Set the value of `SegTree`
+    ///
+    /// Index is 0-based
+    ///
+    /// **Time Complexity**: `O(log n)` where `n = self.len()`
     #[inline]
     pub fn set(&mut self, index: usize, value: T) {
         debug_assert!(
