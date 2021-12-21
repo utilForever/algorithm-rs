@@ -22,9 +22,27 @@ where
         }
     }
 
+    fn apply_vec(&mut self, node: usize, left: usize, right: usize, vec: &Vec<T>) {
+        if left + 1 == right {
+            self.container[node] = vec[left];
+            return;
+        }
+
+        let mid = (left + right) >> 1;
+        self.apply_vec(node << 1, left, mid, vec);
+        self.apply_vec((node << 1) + 1, mid, right, vec);
+    }
+
+    pub fn from_vec(vec: &Vec<T>, func: F) -> SegTree<T, F> {
+        debug_assert!(vec.len() > 0, "SegTree cannot be empty");
+        let mut tree = Self::new(vec.len(), vec[0], func);
+        tree.apply_vec(1, 0, tree.len(), vec);
+        tree
+    }
+
     #[inline]
     pub fn len(&self) -> usize {
-        self.container.len()
+        self.container.len() >> 2
     }
 
     fn _get(&self, node: usize, left: usize, right: usize, start: usize, end: usize) -> T {
@@ -38,7 +56,7 @@ where
         } else if mid <= start {
             self._get((node << 1) | 1, mid, right, start, end)
         } else {
-            self.func(
+            (self.func)(
                 self._get(node << 1, left, mid, start, end),
                 self._get((node << 1) | 1, mid, right, start, end),
             )
@@ -48,7 +66,6 @@ where
     #[inline]
     pub fn get(&self, start: usize, end: usize) -> T {
         debug_assert!(start < end, "start = {} > end = {}", start, end);
-        debug_assert!(start >= 0, "start = {} < 0", start);
         debug_assert!(end <= self.len(), "end = {} > length = {}", end, self.len());
 
         self._get(1, 0, self.len(), start, end)
@@ -70,53 +87,60 @@ where
         let a = self.container[node << 1];
         let b = self.container[(node << 1) | 1];
 
-        self.container[node] = self.func(a, b);
+        self.container[node] = (self.func)(a, b);
     }
 
     #[inline]
     pub fn set(&mut self, index: usize, value: T) {
         debug_assert!(
-            0 <= index && index < self.len(),
-            "index = {} is out of bounds",
-            index
+            index < self.len(),
+            "index = {} >= len = {}",
+            index,
+            self.len()
         );
 
         self._set(1, 0, self.len(), index, value);
     }
 }
 
-impl<T, F> std::ops::Index<usize> for SegTree<T, F>
-where
-    T: Copy,
-    F: Fn(T, T) -> T,
-{
-    type Output = T;
+#[cfg(test)]
+mod test {
+    use super::*;
 
-    fn index(&self, index: usize) -> &Self::Output {
-        self.get(index, index)
+    #[test]
+    fn from_vec_test() {
+        let v = vec![1, 3, 2, 4];
+        let tree = SegTree::from_vec(&v, |a, b| a + b);
+        assert_eq!(tree.get(1, 3), 5);
     }
-}
 
-impl<T, F> std::ops::Index<(usize, usize)> for SegTree<T, F>
-where
-    T: Copy,
-    F: Fn(T, T) -> T,
-{
-    type Output = T;
-
-    fn index(&self, index: (usize, usize)) -> &Self::Output {
-        self.get(index.0, index.1)
+    #[test]
+    fn length_test() {
+        let tree = SegTree::new(10, 0, |a, b| a + b);
+        assert_eq!(tree.len(), 10);
     }
-}
 
-impl<T, F> std::ops::Index<std::ops::Range<usize>> for SegTree<T, F>
-where
-    T: Copy,
-    F: Fn(T, T) -> T,
-{
-    type Output = T;
+    #[test]
+    fn single_index_test() {
+        let mut tree = SegTree::new(10, 0, |a, b| a + b);
+        tree.set(1, 2);
+        assert_eq!(tree.get(1, 2), 2);
+    }
 
-    fn index(&self, index: std::ops::Range<usize>) -> &Self::Output {
-        self.get(index.start, index.end)
+    #[test]
+    fn range_index_test() {
+        let mut tree = SegTree::new(10, 0, |a, b| a + b);
+        tree.set(1, 2);
+        tree.set(3, 4);
+        assert_eq!(tree.get(1, 4), 6);
+    }
+
+    #[test]
+    fn change_test() {
+        let mut tree = SegTree::new(10, 0, |a, b| a + b);
+        tree.set(3, 4);
+        assert_eq!(tree.get(3, 4), 4);
+        tree.set(3, 2);
+        assert_eq!(tree.get(3, 4), 2);
     }
 }
